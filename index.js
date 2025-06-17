@@ -1,5 +1,6 @@
 import express from 'express';
 import userRoutes from './src/routes/userRoutes.js';
+import './src/config/firebaseConfig.js';
 
 const app = express();
 const PORT = 3000;

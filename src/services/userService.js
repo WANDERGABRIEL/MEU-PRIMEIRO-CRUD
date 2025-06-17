@@ -8,45 +8,49 @@ export const UserService = {
       throw new Error('Nome, e-mail e senha são obrigatórios');
     }
 
-    const existe = UserRepository.buscarPorEmail(email);
+    const existe = await UserRepository.buscarPorEmail(email);
     if (existe) throw new Error('Usuário já existe');
 
     const senhaCriptografada = await hashPassword(senha);
     const newUser = new User({ nome, email, senha: senhaCriptografada });
 
-    UserRepository.salvar(newUser);
-    return newUser;
+    const userSalvo = await UserRepository.salvar(newUser);
+    return userSalvo;
   },
 
-  listarTodos() {
-    return UserRepository.listarTodos();
+  async listarTodos() {
+    return await UserRepository.listarTodos();
   },
 
-  buscar(nome, id, email, dataCriacao) {
-    const user = UserRepository.buscar(nome);
+  async buscar(nome, id, email, dataCriacao) {
+    const user = await UserRepository.buscar(nome, id, email, dataCriacao);
     if (!user) throw new Error('Usuário não encontrado');
     return user;
   },
 
   async atualizar(id, dados) {
-    const user = UserRepository.buscarPorId(id);
+    const user = await UserRepository.buscarPorId(id);
     if (!user) throw new Error('Usuário não encontrado');
 
     if (dados.senha) {
       dados.senha = await hashPassword(dados.senha);
     }
 
-    UserRepository.atualizar(dados);
-    return user;
+    dados.dataAtualizacao = new Date().toISOString();
+
+    const userAtualizado = await UserRepository.atualizarPorId(id, dados);
+    return userAtualizado;
   },
 
-  deletar(id) {
-    const deletado = UserRepository.deletarPorId(id);
-    if (!deletado) throw new Error('Usuário não encontrado');
+  async deletar(id) {
+    const user = await UserRepository.buscarPorId(id);
+    if (!user) throw new Error('Usuário não encontrado');
+    await UserRepository.deletarPorId(id);
+    return true;
   },
 
   async login(email, senha) {
-    const user = UserRepository.buscarPorEmail(email);
+    const user = await UserRepository.buscarPorEmail(email);
     if (!user) throw new Error('Usuário não encontrado');
 
     const senhaValida = await compararSenha(senha, user.senha);

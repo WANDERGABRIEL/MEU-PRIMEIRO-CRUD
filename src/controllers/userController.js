@@ -13,18 +13,23 @@ export const userController = {
     }
   },
 
-  listar(req, res) {
-    return res.json(UserService.listarTodos());
+  async listar(req, res) {
+    try {
+      const usuarios = await UserService.listarTodos();
+      return res.json(usuarios);
+    } catch (err) {
+      return res.status(400).json({ erro: err.message });
+    }
   },
 
-  buscar(req, res) {
+  async buscar(req, res) {
     try {
       const { nome, id, email, dataCriacao } = req.query;
       if (!id) {
         return res.status(400).json({ erro: 'Id é obrigatório' });
       }
 
-      const user = UserService.buscar(nome, id, email, dataCriacao);
+      const user = await UserService.buscar(nome, id, email, dataCriacao);
       return res.json(user);
     } catch (err) {
       return res.status(400).json({ erro: err.message });
@@ -51,12 +56,12 @@ export const userController = {
     }
   },
 
-  deletar(req, res) {
+  async deletar(req, res) {
     try {
       const token = req.headers['authorization'];
       if (token !== 'meu-token') return res.status(401).json({ erro: 'Token inválido' });
 
-      const sucesso = UserService.deletar(req.params.id);
+      const sucesso = await UserService.deletar(req.params.id);
       if (!sucesso) {
         return res.status(404).json({ erro: 'Usuário não encontrado' });
       }

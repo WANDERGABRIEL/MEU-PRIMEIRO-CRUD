@@ -1,21 +1,40 @@
-let users = [];
+import { db } from "../config/firebaseConfig.js";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  query,
+  where
+} from "firebase/firestore";
+
+const usersCollection = collection(db, "usuarios");
 
 export const UserRepository = {
-  salvar(user) {
-    users.push(user);
-    return user;
+  async salvar(user) {
+    const docRef = await addDoc(usersCollection, user);
+    return { id: docRef.id, ...user };
   },
 
-  listarTodos() {
-    return users;
+  async listarTodos() {
+    const snapshot = await getDocs(usersCollection);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
   },
 
-  buscarPorEmail(email) {
-    return users.find(u => u.email === email);
+  async buscarPorEmail(email) {
+    const q = query(usersCollection, where("email", "==", email));
+    const snapshot = await getDocs(q);
+    if (snapshot.empty) return null;
+    const docRef = snapshot.docs[0];
+    return { id: docRef.id, ...docRef.data() };
   },
 
-  buscar(nome, id, email, dataCriacao) {
-    return users.find(u => {
+  async buscar(nome, id, email, dataCriacao) {
+    const usuarios = await this.listarTodos();
+    return usuarios.find(u => {
       if (id && u.id !== id) return false;
       if (nome && u.nome.toLowerCase() !== nome.toLowerCase()) return false;
       if (email && u.email.toLowerCase() !== email.toLowerCase()) return false;
@@ -24,30 +43,22 @@ export const UserRepository = {
     });
   },
 
-  buscarPorId(id) {
-    return users.find(u => u.id === id);
+  async buscarPorId(id) {
+    const ref = doc(db, "usuarios", id);
+    const snapshot = await getDoc(ref);
+    return snapshot.exists() ? { id: snapshot.id, ...snapshot.data() } : null;
   },
 
-  deletarPorId(id) {
-    const index = users.findIndex(u => u.id === id);
-    if (index !== -1) {
-      users.splice(index, 1);
-      return true;
-    }
-    return false;
+  async deletarPorId(id) {
+    const ref = doc(db, "usuarios", id);
+    await deleteDoc(ref);
+    return true;
   },
 
-  atualizarPorId(id, dados) {
-     const user = users.find(u => u.id === id);
-    if (!user) {
-      return null;
-    }
-
-    if (dados.nome) user.nome = dados.nome;
-    if (dados.email) user.email = dados.email;
-    if (dados.senha) user.senha = dados.senha;
-    if (dados.dataAtualizacao) user.dataAtualizacao = dados.dataAtualizacao;
-
-    return user;
+  async atualizarPorId(id, dados) {
+    const ref = doc(db, "usuarios", id);
+    await updateDoc(ref, dados);
+    const atualizado = await getDoc(ref);
+    return { id, ...atualizado.data() };
   }
 };
